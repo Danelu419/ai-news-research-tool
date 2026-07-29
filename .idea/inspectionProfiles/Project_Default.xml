@@ -1,0 +1,85 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <list>
+          <option value="APScheduler" />
+          <option value="MarkupSafe" />
+          <option value="PyJWT" />
+          <option value="SQLAlchemy" />
+          <option value="aiohttp" />
+          <option value="amqp" />
+          <option value="anyio" />
+          <option value="billiard" />
+          <option value="boto3" />
+          <option value="bcrypt" />
+          <option value="cachetools" />
+          <option value="celery" />
+          <option value="certifi" />
+          <option value="python-magic-standalone" />
+          <option value="pyotp" />
+          <option value="charset-normalizer" />
+          <option value="click" />
+          <option value="fpdf" />
+          <option value="cryptography" />
+          <option value="emails" />
+          <option value="fastapi" />
+          <option value="firebase-admin" />
+          <option value="h11" />
+          <option value="h2" />
+          <option value="hpack" />
+          <option value="hyperframe" />
+          <option value="idna" />
+          <option value="itsdangerous" />
+          <option value="jmespath" />
+          <option value="kombu" />
+          <option value="packaging" />
+          <option value="passlib" />
+          <option value="proto-plus" />
+          <option value="protobuf" />
+          <option value="psycopg-binary" />
+          <option value="psycopg2-binary" />
+          <option value="pyasn1" />
+          <option value="pyasn1_modules" />
+          <option value="pydantic" />
+          <option value="pydantic-core" />
+          <option value="pydantic-extra-types" />
+          <option value="pydantic-settings" />
+          <option value="pyparsing" />
+          <option value="python-dateutil" />
+          <option value="python-dotenv" />
+          <option value="razorpay" />
+          <option value="redis" />
+          <option value="requests" />
+          <option value="s3transfer" />
+          <option value="six" />
+          <option value="sniffio" />
+          <option value="starlette" />
+          <option value="typing_extensions" />
+          <option value="urllib3" />
+          <option value="uvicorn" />
+          <option value="vine" />
+          <option value="setuptools" />
+          <option value="pandas" />
+          <option value="pytz" />
+          <option value="mjml-python" />
+          <option value="twilio" />
+          <option value="ipython" />
+          <option value="reportlab" />
+          <option value="qrcode" />
+          <option value="Pillow" />
+          <option value="python-multipart" />
+          <option value="openpyxl" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="langchain.*" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
