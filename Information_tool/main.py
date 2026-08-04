@@ -13,11 +13,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 st.title("News Research Tool")
-# st.caption(
-#     "1) Upload one or more PDFs and/or enter URLs → "
-#     "2) Click **Process Sources** → "
-#     "3) Ask a question (sources shown are only those relevant to that question)."
-# )
 st.sidebar.title("Information Sources")
 
 if "url_count" not in st.session_state:
