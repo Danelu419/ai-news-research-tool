@@ -1,9 +1,10 @@
 import os
+import tempfile
 import streamlit as st
 import time
 from langchain.chains.question_answering import load_qa_chain
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import UnstructuredURLLoader
+from langchain_community.document_loaders import UnstructuredURLLoader, PyPDFLoader
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_openai import ChatOpenAI
@@ -12,11 +13,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 st.title("News Research Tool")
-st.sidebar.title("Information News Urls")
+# st.caption(
+#     "1) Upload one or more PDFs and/or enter URLs → "
+#     "2) Click **Process Sources** → "
+#     "3) Ask a question (sources shown are only those relevant to that question)."
+# )
+st.sidebar.title("Information Sources")
 
 if "url_count" not in st.session_state:
     st.session_state.url_count = 3
+if "show_pdf_uploader" not in st.session_state:
+    st.session_state.show_pdf_uploader = False
 
+# --- URLs ---
+st.sidebar.subheader("News URLs (optional)")
 urls = []
 for i in range(st.session_state.url_count):
     url = st.sidebar.text_input(f"URL {i+1}", key=f"url_{i}")
@@ -28,39 +38,82 @@ with col1:
         st.session_state.url_count += 1
         st.rerun()
 with col2:
-    if st.session_state.url_count > 3 and st.button("Remove"):
+    if st.button("Add PDF"):
+        st.session_state.show_pdf_uploader = True
+        st.rerun()
+
+if st.session_state.url_count > 3:
+    if st.sidebar.button("Remove URL"):
         st.session_state.url_count -= 1
         st.rerun()
 
-process_url_clicked = st.sidebar.button("Process URLs")
+# --- PDFs: show Browse files right after Add PDF is clicked ---
+uploaded_pdfs = []
+if st.session_state.show_pdf_uploader:
+    st.sidebar.markdown("**Upload PDF**")
+    uploaded_pdfs = (
+        st.sidebar.file_uploader(
+            "Browse files",
+            type=["pdf"],
+            accept_multiple_files=True,
+            key="pdf_uploader",
+            help="Select one or more PDF files from your computer",
+        )
+        or []
+    )
+    if uploaded_pdfs:
+        st.sidebar.success(f"{len(uploaded_pdfs)} PDF(s) selected")
+
+process_clicked = st.sidebar.button("Process Sources", type="primary")
 
 main_placeholder = st.empty()
 index_path = "faiss_store"
 
-if process_url_clicked:
+if process_clicked:
     urls = [u.strip() for u in urls if u.strip()]
-    if not urls:
-        st.error("Please enter at least one valid URL (http/https).")
+    if not urls and not uploaded_pdfs:
+        st.error("Please enter at least one URL or upload a PDF.")
         st.stop()
 
-    loader = UnstructuredURLLoader(urls=urls)
+    data = []
     main_placeholder.write("Loading data...")
-    data = loader.load()
-    if not data:
-        st.error("No content could be loaded from the given URLs.")
-        st.stop()
 
-    # Keep source URL on every chunk so all URLs can be shown later
-    for doc in data:
-        if "source" not in doc.metadata or not doc.metadata["source"]:
-            doc.metadata["source"] = doc.metadata.get("url", "unknown")
+    # Load from URLs
+    if urls:
+        url_docs = UnstructuredURLLoader(urls=urls).load()
+        for doc in url_docs:
+            if "source" not in doc.metadata or not doc.metadata["source"]:
+                doc.metadata["source"] = doc.metadata.get("url", "unknown")
+        data.extend(url_docs)
+
+    # Load from uploaded PDFs
+    if uploaded_pdfs:
+        for pdf in uploaded_pdfs:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                tmp.write(pdf.read())
+                tmp_path = tmp.name
+            try:
+                pdf_docs = PyPDFLoader(tmp_path).load()
+                for doc in pdf_docs:
+                    # Show PDF file name (+ page) as the source
+                    page = doc.metadata.get("page")
+                    label = pdf.name
+                    if page is not None:
+                        label = f"{pdf.name} (page {page + 1})"
+                    doc.metadata["source"] = label
+                data.extend(pdf_docs)
+            finally:
+                os.remove(tmp_path)
+
+    if not data:
+        st.error("No content could be loaded from the given sources.")
+        st.stop()
 
     loaded_sources = sorted(
         {doc.metadata.get("source", "") for doc in data if doc.metadata.get("source")}
     )
     main_placeholder.write(
-        f"Loaded {len(data)} page(s) from {len(loaded_sources)} URL(s): "
-        + ", ".join(loaded_sources)
+        f"Loaded {len(data)} document(s) from {len(loaded_sources)} source(s)."
     )
 
     text_splitter = RecursiveCharacterTextSplitter(
@@ -91,16 +144,15 @@ if query:
 
         llm = ChatOpenAI(
             openai_api_base="https://api.groq.com/openai/v1",
-            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            openai_api_key=os.getenv("Groq_API_KEY"),
             model_name="llama-3.3-70b-versatile",
             temperature=0.7,
         )
 
-        # Score chunks against the question; keep only strong matches
         docs_with_scores = vectorstore.similarity_search_with_relevance_scores(
             query, k=8
         )
-        score_threshold = 0.45  # higher = stricter (only more relevant sources)
+        score_threshold = 0.45
 
         relevant_docs = []
         best_score_by_source = {}
@@ -114,7 +166,6 @@ if query:
             if src not in best_score_by_source or score > best_score_by_source[src]:
                 best_score_by_source[src] = score
 
-        # If nothing passed the threshold, fall back to the single best chunk
         if not relevant_docs and docs_with_scores:
             best_doc, best_score = docs_with_scores[0]
             relevant_docs = [best_doc]
@@ -128,7 +179,6 @@ if query:
         st.header("Answer")
         st.write(answer)
 
-        # Sources sorted by relevance (best match first)
         source_urls = [
             src
             for src, _ in sorted(
@@ -143,4 +193,4 @@ if query:
         else:
             st.info("No relevant source found for this question.")
     else:
-        st.error("Please process URLs first to build the knowledge base.")
+        st.error("Please process sources first to build the knowledge base.")
