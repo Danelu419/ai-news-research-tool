@@ -52,7 +52,7 @@ if st.session_state.show_pdf_uploader:
             type=["pdf"],
             accept_multiple_files=True,
             key="pdf_uploader",
-            help="Select one or more PDF files from your computer",
+            help="Select PDF files from your computer",
         )
         or []
     )
