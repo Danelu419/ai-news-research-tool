@@ -42,7 +42,7 @@ if st.session_state.url_count > 3:
         st.session_state.url_count -= 1
         st.rerun()
 
-# --- PDFs: show Browse files right after Add PDF is clicked ---
+# --- PDFs: show Browse files right after Add PDF is clicked
 uploaded_pdfs = []
 if st.session_state.show_pdf_uploader:
     st.sidebar.markdown("**Upload PDF**")
